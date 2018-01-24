@@ -1,5 +1,12 @@
 ﻿namespace SlimSql.MsSql
 
+(*
+
+    This code is unfortunately necessary to
+    teach Dapper how to handle option types.
+
+*)
+
 module Startup =
 
     open System
