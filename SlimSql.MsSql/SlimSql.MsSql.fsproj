@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SqlQuery.fs" />
+    <Compile Include="SqlConfig.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Startup.fs" />
     <Compile Include="Sql.fs" />
   </ItemGroup>
 
