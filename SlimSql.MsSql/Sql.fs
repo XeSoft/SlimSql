@@ -6,6 +6,9 @@ module Sql =
     open Dapper
 
 
+    do Startup.registerOptionTypes ()
+
+
     let query<'T> sqlConfig sqlQuery =
         async {
             use connection = new SqlConnection(sqlConfig.ConnectString)
@@ -38,8 +41,4 @@ module Sql =
                         |> Async.Ignore
             transaction.Commit ()
         }
-
-
-    let private initResult =
-        Startup.registerOptionTypes ()
             
