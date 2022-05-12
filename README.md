@@ -72,4 +72,4 @@ Sql.writeBatch sqlConfig patches
 // returns Async<unit>
 ```
 
-More documentation coming. For now, see this [post](https://dev.to/kspeakman/dirt-simple-sql-queries-in-f-a37) for more info.
+More documentation needed. See this [post](https://dev.to/kspeakman/dirt-simple-sql-queries-in-f-a37) for more info.
