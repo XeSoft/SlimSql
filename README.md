@@ -7,69 +7,177 @@ A SQL library for F# with an elegant, minimal API.
 
 ## Usage
 
-It doesn't try to hide SQL from you, but just tries to get out of your way while you use SQL. Here's how you can define a query.
+It doesn't try to hide SQL from you, but gets out of your way while you use SQL. Here is the basic usage.
 
 ```fsharp
-open SlimSql.MsSql.Helpers
+open SlimSql.Postgres
+
+type Course =
+    { CourseId: int
+      CourseName: string }
 
 let listCourses offset limit =
+    // Usage: sql <query> <parameters>
     sql
+        // the query
         """
         SELECT CourseId, CourseName
-          FROM Course
-        OFFSET @Offset ROWS
-         FETCH
-          NEXT @Limit ROWS ONLY
+        FROM Course
+        ORDER BY CourseName
+        LIMIT @Limit
+        OFFSET @Offset
         ;
         """
+        // the parameters
         [
-            p "Offset" offset
-            p "Limit" limit
+            // Usage: p <name> <value>
+            p "@Offset" offset
+            p "@Limit" limit
+        ]
+
+let sqlConfig = SqlConfig.create myConnectionString
+
+let query = listCourses 0 100
+Sql.read<Course> sqlConfig query
+
+// returns: Async<Result<Course list, exn>>
+```
+
+
+Multiple statements can be merged into one.
+
+```fsharp
+module Course =
+    let deactivate courseId =
+        sql
+            """UPDATE Course SET IsActive = false WHERE CourseId = @CourseId;"""
+            [ p "@CourseId" courseId ]
+
+module Registration =
+    let removeAllForCourse courseId =
+        sql
+            """DELETE FROM Registration WHERE CourseId = @CourseId;"""
+            [ p "@CourseId" courseId ]
+
+
+let deactivate sqlConfig courseId =
+    SqlOperation.merge [
+        Course.deactivate courseId
+        Registration.removeAllForCourse courseId
+    ]
+    |> SqlOperation.wrapInTransaction
+    |> Sql.write sqlConfig
+
+    // returns Async<Result<unit, exn>>
+```
+
+
+Multiple reads in one database round-trip, with a little code organization thrown in.
+
+```fsharp
+open System
+open SlimSql.Postgres
+
+module Student =
+
+    type Detail =
+        { StudentId: Guid
+          Name: string }
+
+    let getDetail studentId =
+        sql
+            """SELECT StudentId, Name FROM Student WHERE StudentId = @StudentId;"""
+            [ p "@StudentId" studentId ]
+
+module Registration =
+
+    type ForStudent =
+        { RegistrationId: Guid
+          CourseId: Guid
+          CourseName: string
+          StatusName: string }
+
+    let listForStudent studentId offset limit =
+        sql
+            """
+            SELECT r.RegistrationId, r.CourseId, c.Name AS CourseName, c.StatusName
+            FROM Registration r
+            JOIN Course c ON c.CourseId = r.CourseId
+            WHERE r.StudentId = @StudentId
+            ORDER BY c.Name, r.RegistrationId -- incl RegId for consistent sort
+            LIMIT @Limit
+            OFFSET @Offset
+            """
+            [
+                p "@StudentId" studentId
+                p "@Limit" limit
+                p "@Offset" offset
+            ]
+
+
+type StudentOverview =
+    { Detail: Student.Detail
+      Registrations: Registration.ForStudent list }
+
+type StudentOverviewRequest =
+    { StudentId: Guid
+      Offset: int
+      Limit: int }
+
+let overview sqlConfig { StudentId = studentId
+                         Offset = offset
+                         Limit = limit } =
+    async {
+        let op =
+            SqlOperation.merge [
+                Student.getDetail studentId
+                Registration.listForStudent studentId offset limit
+            ]
+        use! multi = Sql.multiRead sqlConfig op
+        match! GridReader.readFirst<Student.Detail> multi with
+        | None -> return None
+        | Some detail ->
+            let! registrations = GridReader.read<Registration.ForStudent> multi
+            return Some { Detail = detail; Registrations = registrations }
+    }
+    |> Sql.multiResult
+
+    // returns Async<Result<StudentOverview option, exn>>
+```
+
+This uses Npgsql and Dapper under the covers.
+
+In case the database type cannot be automatically inferred by Npgsql, you can provide the parameter type with `pTyped`:
+
+```fsharp
+let create entityId json =
+    sql
+        """INSERT INTO Entity (EntityId, Data) VALUES (@EntityId, @Data);"""
+        [
+            p "@EntityId" entityId
+            pTyped "@Data" json NpgsqlDbType.Jsonb
         ]
 ```
 
-The helper functions in the above example are `sql` and `p`. Actually, `p` (short for parameter) is just a shortcut for making a tuple. Here's how you would run the query.
+Option types are supported. Here, Notes may be null so they are represented as an `option` type.
 
 ```fsharp
-type Course =
-    {
-        CourseId : int
-        CourseName : string
-    }
+// Notes may be null in the database
+module Course =
+    type Detail =
+        { CourseId: Guid
+          Name: string
+          Notes: string option }
 
-open SlimSql.MsSql
+    let getDetail courseId =
+        sql
+            """SELECT CourseId, Name, Notes FROM Course WHERE CourseId = @CourseId;"""
+            [ p "@CourseId" courseId ]
 
-let sqlConfig = SqlConfig.create connectStringFromSomewhere
-let query = listCourses request.Offset request.Limit
-let coursesAsync = Sql.query<Course> sqlConfig query
 
-// coursesAsync is Async<Course array>
+let detail sqlConfig courseId =
+    let op = Course.getDetail courseId
+    Sql.readFirst<Course.Detail> sqlConfig op
+
+    // returns: Async<Result<Course.Detail option, exn>>
 ```
-
-Here, `Sql.query<Course>` is a function which runs the query and converts each data row into a `Course` object. Like with most mappers, the property types and names have to match the returned columns. Additionally, the order of the returned fields from the SQL statement need to match the order of the record fields. 😒
-
-Note that the query is created separately from the code which executes the query. This is particularly handy for queries which perform updates. I can setup multiple writes ahead of time, even from separate pieces of code, then perform them later in the same transaction.
-
-```fsharp
-let deactivateCourse courseId =
-    sql "UPDATE ..." [ p "CourseId" courseId ]
-
-let cancelCourseRegistrations courseId =
-    sql "DELETE ..." [ p "CourseId" courseId ]
-
-...
-
-let patches =
-    [
-        deactivateCourse courseId
-        cancelCourseRegistrations courseId
-    ]
-
-...
-
-Sql.writeBatch sqlConfig patches
-
-// returns Async<unit>
-```
-
-More documentation coming. For now, see this [post](https://dev.to/kspeakman/dirt-simple-sql-queries-in-f-a37) for more info.

@@ -1,9 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2024
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SlimSql.MsSql", "SlimSql.MsSql\SlimSql.MsSql.fsproj", "{D1216DC9-9DD4-4FDC-AAF6-7611B8518AE7}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SlimSql.MsSql", "SlimSql.MsSql\SlimSql.MsSql.fsproj", "{D1216DC9-9DD4-4FDC-AAF6-7611B8518AE7}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "SlimSql.Postgres", "SlimSql.Postgres\SlimSql.Postgres.fsproj", "{69E5EC6C-D845-4A2D-9CC3-0CBA8D75AC49}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{FCDBDB91-BE29-4257-84C8-9FE1C72CF72D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +22,10 @@ Global
 		{D1216DC9-9DD4-4FDC-AAF6-7611B8518AE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1216DC9-9DD4-4FDC-AAF6-7611B8518AE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1216DC9-9DD4-4FDC-AAF6-7611B8518AE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69E5EC6C-D845-4A2D-9CC3-0CBA8D75AC49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69E5EC6C-D845-4A2D-9CC3-0CBA8D75AC49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69E5EC6C-D845-4A2D-9CC3-0CBA8D75AC49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69E5EC6C-D845-4A2D-9CC3-0CBA8D75AC49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
