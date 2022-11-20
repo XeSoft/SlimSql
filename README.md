@@ -150,16 +150,16 @@ This uses Npgsql and Dapper under the covers.
 In case the database type cannot be automatically inferred by Npgsql, you can provide the parameter type with `pTyped`:
 
 ```fsharp
-let create entityId json =
+let create entityId jsonString =
     sql
         """INSERT INTO Entity (EntityId, Data) VALUES (@EntityId, @Data);"""
         [
             p "@EntityId" entityId
-            pTyped "@Data" json NpgsqlDbType.Jsonb
+            pTyped "@Data" jsonString NpgsqlDbType.Jsonb
         ]
 ```
 
-Option types are supported. Here, Notes may be null so they are represented as an `option` type.
+Option types are supported. Here, Notes may be null so it is represented as an `option` type.
 
 ```fsharp
 // Notes may be null in the database
