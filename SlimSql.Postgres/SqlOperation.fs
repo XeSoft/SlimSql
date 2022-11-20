@@ -28,13 +28,6 @@ module SqlOperation =
                     Type = x.Type
                 }
 
-            let toSqlParam (x: TmpSqlParam) : SqlParam =
-                {
-                    Name = x.TmpName
-                    Value = x.Value
-                    Type = x.Type
-                }
-
         let transformOp i (op: SqlOperation) =
             let rec transform (sb: StringBuilder) (transformed: SqlParam list) (parms: TmpSqlParam list) =
                 match parms with
@@ -49,23 +42,12 @@ module SqlOperation =
                             Type = parm.Type
                         }
                     let nSb = sb.Replace(startingName, endingName)
-                    // must replace parameter name in statement and remaining parameter names
-                    // to handle cases where name is a subset of another parameter name
-                    // for example: parameters @Name and @NameLower
-                    // after @Name becomes @Name1, query text also has @Name1Lower
-                    // so parameter has @NameLower has to be adjusted also
-                    let nParms =
-                        nParms
-                        |> List.map (fun x ->
-                            let nTmpName = x.TmpName.Replace(startingName, endingName)
-                            { x with TmpName = nTmpName }
-                        )
                     let nTransformed = nParm :: transformed
                     transform nSb nTransformed nParms
             let sb = StringBuilder(op.Statement)
             let parms =
                 op.Parameters
-                |> List.sortBy (fun x -> x.Name.Length)
+                |> List.sortByDescending (fun x -> x.Name.Length, x.Name)
                 |> List.map TmpSqlParam.fromSqlParam
             transform sb [] parms
 
